@@ -1,0 +1,67 @@
+https://www.php.net/manual/ja/language.generators.overview.php
+
+
+
+🟡PHPジェネレータ
+ジェネレータ関数
+...途中で処理を一時停止でき、その時点の値を返せる。
+⇒無駄なメモリ使用を避けることができるため、大規模なデータセットを処理する場合に有用。
+
+※通常の関数はreturnまで処理を一気に実行する。
+
+
+
+🔵ユースケース
+
+🟢パフォーマンスの向上が必要なとき
+・大規模なデータセットを処理するとき⇒メモリを節約できる
+・データが必要な時にのみ生成される。
+
+例）ジェネレータを使用したとき
+function countToThree() {
+    yield 1;
+    yield 2;　この行以下の値は、「yield 1;」に対する処理が終了するまでは生成されない⇒遅延評価
+    yield 3;
+}
+
+$generator = countToThree();
+
+foreach ($generator as $number) {
+    echo $number . "\n";
+}
+
+例）普通の関数のとき
+$numbers = [1, 2, 3];　　この時点は繰り返しに必要なデータが全て生成される⇒規模が大きくなるとメモリを相当使用する
+
+foreach ($numbers as $number) {
+    echo $number . "\n";
+}
+
+🟢途中経過の値で処理したいとき
+処理を一時停止して、途中経過の値を返すので、その時点の値を取得できる。
+
+例）
+function simpleGenerator() {
+    echo "Start\n";
+    yield 1;
+    echo "Middle\n";
+    yield 2;
+    echo "End\n";
+}
+
+$generator = simpleGenerator();
+
+echo $generator->current() . "\n"; // Start
+$generator->next(); // Middle
+echo $generator->current() . "\n";
+$generator->next(); // End
+
+
+
+🔵定義の仕方
+
+function generatorFunction() {
+    yield 1;　　途中の値をここで返して、処理が一時停止する
+    yield 2;
+    yield 3;
+}

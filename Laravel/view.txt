@@ -1,0 +1,13 @@
+🟡ビュー
+https://readouble.com/laravel/9.x/ja/views.html
+
+
+
+🟡Blade
+https://readouble.com/laravel/9.x/ja/blade.html
+
+
+
+🟡フロントエンドの開発
+Vite...Vue.jsや他のフレームワークでフロントエンドを開発するときに便利なツール
+https://readouble.com/laravel/9.x/ja/vite.html

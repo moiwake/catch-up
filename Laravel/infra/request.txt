@@ -1,0 +1,22 @@
+🟡proxy
+
+🔵信頼できるproxy
+信頼できないプロキシを経由すると、アプリケーションがリクエストのセキュアなプロトコル（HTTPS）を生成するべきかどうかを正確に判断できない。
+⇒非セキュアな（http://）URLを生成する可能性がある。
+
+信頼できるproxyを設定しておけば良い
+⇒ガイド「信頼するプロキシの設定」
+https://readouble.com/laravel/9.x/ja/requests.html
+
+※AWS Elasticロードバランシングを使用している場合も設定が必要
+
+
+
+🟡host
+
+🔵応答するhostの限定
+デフォルトでは、アプリはすべてのホストに応答する
+⇒信頼できるホストのみに限定したいときは、設定が必要
+
+ガイド「信頼するホストの設定」
+https://readouble.com/laravel/9.x/ja/requests.html

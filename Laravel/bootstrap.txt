@@ -1,0 +1,42 @@
+🟡ブートストラップのフェーズ
+アプリケーションの起動前に実行され、アプリケーションが正しく機能するために必要な初期化と設定するフェーズ
+
+Illuminate/Foundation/Http/Kernel.phpでブートストラップを実行している。
+
+
+
+🔵デフォルトのブートストラップクラス
+アプリケーションの起動時に実行されるブートストラップクラスの配列
+protected $bootstrappers = [
+    \Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables::class,
+    \Illuminate\Foundation\Bootstrap\LoadConfiguration::class,
+    \Illuminate\Foundation\Bootstrap\HandleExceptions::class,
+    \Illuminate\Foundation\Bootstrap\RegisterFacades::class,
+    \Illuminate\Foundation\Bootstrap\RegisterProviders::class,
+    \Illuminate\Foundation\Bootstrap\BootProviders::class,
+];
+
+これらのクラスの呼び出して、ブートストラップを実行する。
+
+
+
+🔵独自のブートストラップの追加
+Illuminate/Foundation/Http/Kernel.phpに追加するか、
+サービスプロバイダーで追加する。
+
+※サービスプロバイダー：アプリケーションへの機能やサービスの組み込みを担当するクラス
+
+
+
+🔵実行
+Illuminate/Foundation/Http/Kernel.phpのbootstrapメソッドで実行
+
+public function bootstrap()
+{
+    if (! $this->app->hasBeenBootstrapped()) {
+        $this->app->bootstrapWith($this->bootstrappers());
+    }
+}
+
+bootstrapWithはIlluminate/Foundation/Application.phpのメソッドで、
+$bootstrappersの配列に含まれるクラスのbootstrapメソッドを実行している。

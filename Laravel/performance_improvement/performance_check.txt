@@ -1,0 +1,13 @@
+🔵処理の速度を確認
+https://readouble.com/laravel/9.x/ja/helpers.html
+「その他のユーティリティ」ー「ベンチマーク」
+
+例）
+use Illuminate\Support\Benchmark;
+
+Benchmark::dd(fn () => User::find(1)); // 0.1 ms
+
+Benchmark::dd([
+    'Scenario 1' => fn () => User::count(), // 0.5 ms
+    'Scenario 2' => fn () => User::all()->count(), // 20.0 ms
+]);
