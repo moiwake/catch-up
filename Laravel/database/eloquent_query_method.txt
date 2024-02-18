@@ -1,0 +1,138 @@
+https://readouble.com/laravel/9.x/ja/eloquent.html
+
+
+
+🟡Eloquentのメソッド
+Eloquentは、モデルと関連付けたデータベーステーブルのクエリビルダとしての機能も提供している。
+
+使用できるメソッドはIlluminate\Database\Eloquent\Builderクラスに定義されている。
+
+ー　Query\Builderクラスとの違い
+Illuminate\Database\Query\Builderクラス：データベースクエリを構築するメソッドを提供
+
+⇒Query\BuilderクラスをEloquent用に拡張したのがIlluminate\Database\Eloquent\Builderクラス：Eloquentモデルと関連するデータベース操作のメソッドを提供
+⇒Query\Builderのメソッドは、Eloquentにも使用できる。
+
+＊ここではEloquentのクエリビルダをクエリビルダと呼ぶ。
+
+
+
+🟡メソッドまとめ
+＊DBファサードの使用は不要・・・Eloquentモデルに対して、静的メソッドとして使用することもできる。
+
+＊すべてのメソッド
+https://laravel.com/api/9.x/Illuminate/Database/Eloquent/Builder.html#method_where
+
+＊Query\Builderのメソッドと同じ結果が得られるメソッドは省略
+
+①Eloquentクエリビルダを返す
+
+②Eloquentコレクションを返す
+
+③Eloquentモデルのインスタンスを返す
+
+
+
+🔵①Eloquentクエリビルダを返す
+＊クエリビルダを取得している時点では、クエリは発行されていない。
+
+🟢カスタムカラムの追加・取得するカラムの追加
+addSelect
+
+ー　カスタムカラムを追加
+任意のカラム名を指定し、サブクエリの結果をカラムの値として、クエリの結果に追加することができる。
+
+例）destinationsテーブルのレコードに、last_flightカラムを追加して、サブクエリの結果をその値に設定する。
+$destinations = Destination::addSelect(['last_flight' => Flight::select('name')
+    ->whereColumn('destination_id', 'destinations.id')
+    ->orderByDesc('arrived_at')
+    ->limit(1)　　目的地で検索し、到着時刻（arrived_at）が最新で、フライト名のみをカラムにもつレコードを１つ返す
+])->get();
+
+$destinations = [
+    {
+        "id": 1,
+        "name": "Tokyo",
+        "created_at": "2024-02-12 10:00:00",
+        "updated_at": "2024-02-12 10:00:00",
+        "last_flight": "Flight 123"　　目的地がTokyoで、最新の到着時刻のフライト名がここに入る
+    },
+　　///
+]
+
+ー　存在するカラムを指定する
+すでにselectされたクエリビルダにカラムを追加する
+
+🟢サブクエリの結果で並べ替え
+orderBy()にサブクエリを渡したとき
+⇒サブクエリの結果順にレコードを並べ替える。
+
+例）到着時刻（arrived_at）が早い順にdestinationsテーブルのレコードを並べ替える。
+Destination::orderByDesc(
+    Flight::select('arrived_at')
+        ->whereColumn('destination_id', 'destinations.id')
+        ->orderByDesc('arrived_at')
+        ->limit(1)
+)->get();
+
+
+
+🔵②Eloquentコレクションを返す
+＊クエリビルダから、コレクションを取得した時点で、クエリが発行される。
+
+
+
+🔵③Eloquentモデルのインスタンスを返す
+
+🟢firstWhere()
+whereとfirstを併用したのと同じ結果を得る。
+$flight = Flight::where('active', 1)->first();
+
+🟢結果が得られなかったときにエラーを発生させる
+結果が得られなかったとき、例外（Illuminate\Database\Eloquent\ModelNotFoundException）を投げる。
+＊ModelNotFoundExceptionをキャッチしない場合は、404を返す。
+
+ー　findOrFail()
+$flight = Flight::findOrFail(1);
+
+ー　firstOrFail()
+$flight = Flight::where('legs', '>', 3)->firstOrFail();
+
+🟢結果が得られなかったときの処理を指定する
+結果が得られなかったとき、クロージャーで指定した処理を実行し、その返り値が結果となる。
+
+ー　findOr()
+$flight = Flight::findOr(1, function () {
+    // ...
+});
+
+ー　firstOr()
+$flight = Flight::where('legs', '>', 3)->firstOr(function () {
+    // ...
+});
+
+🟢結果が得られなかったときにレコードを作成 / 生成する
+第１引数：検索したい条件を配列で指定する
+第２引数：結果が得られなかったときに作成/生成するレコードの属性データを配列で指定する
+
+ー　作成する
+firstOrCreate()
+
+例）nameカラムがLondonのレコードを取得、なければnameカラムの値がLondonに設定されたレコードを作成する
+$flight = Flight::firstOrCreate([
+    'name' => 'London'
+]);
+
+例）nameカラムがLondonのレコードを取得、なければname、delayed、delayedカラムに指定の値が設定されたレコードを作成する
+$flight = Flight::firstOrCreate(
+    ['name' => 'London to Paris'],
+    ['delayed' => 1, 'arrival_time' => '11:30']
+);
+
+ー　生成する
+firstOrNew()
+
+DBには保存されず、指定の属性データが設定されたインスタンスを返す。
+⇒保存する場合は、save()を使用する。
+
+例）使用方法は上記と同じ

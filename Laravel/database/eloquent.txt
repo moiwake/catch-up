@@ -1,0 +1,166 @@
+https://readouble.com/laravel/9.x/ja/eloquent.html
+
+
+
+🟡Eloquent
+Laravelのライブラリで、データベーステーブルをモデルとして表現し、オブジェクトとして扱うことで、データベースの操作を行える。
+
+
+
+🔵Eloquentのクエリビルダ
+メソッドまとめ：eloquent_query_method.txt
+
+
+
+🔵Eloquentのコレクション
+Illuminate\Database\Eloquent\Collectionクラス
+⇒Illuminate\Support\Collectionクラスを拡張したクラス
+⇒通常のコレクションに使えるメソッドが使用できる。
+
+ー　使用できるメソッドまとめ
+collection/collection.txt
+https://readouble.com/laravel/9.x/ja/eloquent-collections.html#available-methods
+https://laravel.com/api/7.x/Illuminate/Database/Eloquent/Collection.html
+
+
+
+🔵Eloquentモデルクラスの作成
+作成コマンドまとめ：ガイド「モデルクラスの生成」
+
+
+
+🔵モデルの情報を一覧形式で確認する
+php artisan model:show モデル名
+⇒モデルに定義されているプロパティや、リレーションを一覧形式で見れる。
+
+
+
+🔵プロパティ
+
+🟢fillable
+値を代入できるモデルのプロパティ（カラム）を明示的に指定して、
+存在しないカラムや、入力によって値を設定したくないカラムへの代入を防ぐ。
+
+❗preventSilentlyDiscardingAttributesの設定がないと、予期しないカラムへの代入があったときにエラーが発生しない？
+別項参照「🔵バグを未然に防ぐ」
+
+🟢テーブル名
+テーブル名の単数形 = モデル名でないときは、明示的にテーブル名を指定する。
+protected $table = 'テーブル名';
+
+🟢プライマリーキー
+idカラム以外をプライマリーキーに設定する場合は、明示的に指定する。
+protected $primaryKey = 'カラム名';
+
+ー　自動増分の整数じゃないとき
+public $incrementing = false;　を定義する。
+
+ー　整数以外のデータ型のとき
+protected $keyType = 'string';
+
+ー　コンポジットプライマリーキー
+一意のIDを１つのカラムで持つのではなく、複数のカラムの組み合わせを識別子とする
+：uniqueIdsメソッドをオーバーライドする
+
+public function uniqueIds()
+{
+    return ['id', 'discount_code'];
+}
+
+ガイド「「コンポジット」主キー」
+
+🟢UUID
+自動増分整数をレコードの識別子にする代わりに、UUIDが使用できる。
+
+＊UUID
+36文字の英数字で構成され、おそらく世界レベルで一意になる識別子。
+⇒別テーブルのレコードと混ぜても識別できる。
+
+ー　使用方法
+・テーブル作成：uuid型のカラムを作成
+$table->uuid('id')->primary();
+
+・モデル：HasUuidsのトレイトの使用を定義
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+
+class Article extends Model
+{
+    use HasUuids;
+
+    // ...
+}
+
+ー　レコードの順序
+デフォルトで、順序付き(ordered)UUIDが生成される
+⇒生成順にソートできる
+
+ー　作成するUUIDのカスタマイズ
+newUniqueIdメソッドをオーバーライドする。
+
+public function newUniqueId()
+{
+    return (string) Uuid::uuid4();
+}
+
+ー　ULID
+26文字の一意の文字列
+
+UUIDとの違い
+・一意性の保証は劣る
+・文字列が短く、ストレージは効率的
+・タイムスタンプを明示的に含むため、タイムスタンプ順に並べ替えることが容易（UUIDより並び替えやすい？）
+
+🟢タイムスタンプ（created_at・updated_at）
+
+ー　タイムスタンプ機能の無効
+public $timestamps = false;
+
+ー　DB保存時のフォーマット指定
+protected $dateFormat = 'Y-m-d';
+
+ー　タイムスタンプをするカラム名をカスタマイズ
+const CREATED_AT = 'creation_date';
+const UPDATED_AT = 'updated_date';
+
+🟢接続するデータベースをデフォルト以外に
+protected $connection = 'sqlite';
+
+🟢カラムの値のデフォルトを設定する
+❗通常はテーブル作成時にマイグレーションファイルで設定する
+デフォルト値をモデルクラス自体で管理したい場合に便利
+
+protected $attributes = [
+    'options' => '[]',
+    ///
+];
+
+
+
+🔵バグを未然に防ぐ
+本番環境以外では、以下の機能を有効にするなどして、
+バグが発生しそうな事態が起きたときにエラーが発生するようにして、未然に防げるようにする。
+
+🟢shouldBeStrict()
+以下３つの機能すべてを有効にする。
+
+🟢遅延評価が発生したらエラーを発生させる
+遅延評価⇒メモリを節約できるが、処理速度が落ちる（N+1が発生する）。
+
+preventLazyLoading()
+
+ガイド「Eloquent厳格さの設定」
+https://zenn.dev/nshiro/articles/069ed399404934
+
+🟢代入を禁止しているカラムへの代入でエラーを発生させる
+fillableプロパティに設定されてないカラム・guardプロパティに設定されたカラム、
+そのどちらかのカラムに値が代入されたときに、エラーを発生させる。
+
+preventSilentlyDiscardingAttributes()
+
+🟢存在しないカラムを参照するしたときにエラーを発生させる
+カラムにアクセスしたとき、そのカラムがDBから取得されなかったり（selectで指定されてなかった）、
+そのカラムがそもそも存在しなかったりした場合に、エラーを発生させる。
+
+preventAccessingMissingAttributes()

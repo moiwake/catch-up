@@ -1,0 +1,396 @@
+https://readouble.com/laravel/9.x/ja/queries.html
+
+
+
+🟡クエリビルダ
+データベースクエリを構築するためのPHPフレームワーク
+⇒メソッドチェーンを使用してデータベースクエリを構築できる。
+
+メソッドはIlluminate\Database\Query\Builderクラスに定義されている。
+
+
+
+🟡クエリビルダのメソッド
+＊データの新規登録、更新、削除のメソッドは、Eloquentモデルのメソッドを使用すべき
+
+①クエリビルダを返す
+
+②コレクションを返す
+
+③stdClassオブジェクトを返す
+
+④その他を返す
+
+⑤生のSQLを書く
+
+⑥大量のレコードに対して処理を行う
+
+⑦レコードのロック
+
+⑧デバッグ
+
+
+
+🔵①クエリビルダを返す
+
+🟢table()
+
+🟢where
+＊下記に別途まとめ記載
+
+🟢集計関数（COUNT・SUMなど）/ グループ化されたカラムの検索
+having
+
+🟢取得するカラムの指定
+select
+
+🟢カスタムカラムの追加・取得するカラムの追加
+addSelect
+
+ー　カスタムカラムを追加
+任意のカラム名を指定し、サブクエリの結果をカラムの値として、クエリの結果に追加することができる。
+＊例はEloquentの方に記載（Eloquentの方が簡単に書ける）
+
+ー　存在するカラムを指定する
+すでにselectされたクエリビルダにカラムを追加する
+
+🟢distinct
+
+🟢順序
+orderBy
+
+❗一度orderByしたあと、さらに並び替えたいとき
+orderByをクエリに追加すると・・・
+①新たに適用した順序に並び替える
+②それまでに適用した順序に並び替える
+⇒期待した順序ではなくなる可能性大
+⇒reorderを使用する
+
+ー　日付で並び替え
+latest、oldest
+＊デフォルトはcreated_atカラム、引数で他の日付のカラムも指定できる
+
+ー　順序のリセット
+reorder
+＊引数にカラムと順序を指定すると、並び替えをリセットした上で新しい順序に並び替えできる。
+
+ー　ランダム
+inRandomOrder
+
+🟢取得レコードの開始位置を決める
+offset
+
+🟢取得レコードの数を決める
+limit
+
+🟢同じ値を持つカラムをグループ化する
+groupBy
+指定のカラムの値が同じレコードをグループ化して、グループごとに1つのレコードが結果として返される。
+
+❗orderByやdistinctなどと併用するときには注意が必要？？
+
+＊複数のカラムでグルーピングすることもできる
+⇒指定したカラムの値がすべて一致するレコード同士をグルーピングする。
+
+🟢複数のクエリの結果を１つにまとめる
+union()：重複なし
+unionAll()：重複あり
+
+ガイド「UNION」
+
+🟢join
+たぶん基本使わないほうがいい
+なんならカラム追加を検討すべきかも
+
+ガイド「JOIN」
+
+
+
+🔵②コレクションを返す
+コレクションの中の各データは、stdClassオブジェクト（PHPの標準クラス）のインスタンス
+
+$users = DB::table('users')->get();
+
+foreach ($users as $user) {　　$users：コレクション
+    echo $user->name;　　$user：stdClass
+}
+
+ー　stdClassオブジェクト
+プロパティを持たない空のオブジェクトで、任意のプロパティを動的に追加できる。
+⇒テーブルのカラムにないプロパティも設定できる。（テーブルに保存はできない。）
+
+プロパティへのアクセス：　$object->property
+
+🟢get()
+
+
+
+🔵③stdClassオブジェクトを返す
+
+🟢first()
+
+🟢find()
+
+
+
+🔵④その他
+
+🟢value()
+最初に見つけたレコードから、指定のカラムの値を返す。
+例）DB::table('users')->value('email');　　usersテーブルのレコードの中から、最初に見つかったレコードのemailカラムの値を返す
+
+🟢pluck()
+
+ー　引数１つ
+指定したカラムの値をすべて含んだコレクションを返す。
+
+ー　引数２つ
+指定した２つのカラムの値すべてが、それぞれキーと値になった（第２引数：キー、第１引数：値）コレクションを返す。
+
+例）DB::table('users')->pluck('role', 'name');
+
+返り値
+[
+    'John' => 'Manager',
+    'Alice' => 'Developer',
+    //
+]
+
+🟢計算
+count、max、min、avg、sum
+
+🟢判定
+exists、doesntExist
+
+
+
+🔵⑤生のSQLを書く
+クエリビルダのメソッドでは実現できないクエリを実行したいときに便利
+
+❗SQLインジェクションに注意
+
+🟢バインディングオプションの指定
+動的にSQL文を書ける
+
+例）
+$num = 200;
+
+$orders = DB::table('orders')
+    ->whereRaw('price > IF(state = "TX", ?, 100)', [$num])
+    ->get();
+
+?（プレースホルダー）に$numが入る。
+
+⇒stateがTX：priceが200より大きい場合にフィルタリングされる。
+⇒stateがTXでない：priceが100より大きい場合にフィルタリングされる。
+
+🟢selectRaw
+※バインディングオプションの指定ができる
+
+🟢whereRaw・orWhereRaw
+※バインディングオプションの指定ができる
+
+🟢havingRaw・orHavingRaw
+※バインディングオプションの指定ができる
+
+🟢orderByRaw
+
+🟢groupByRaw
+
+
+
+🔵⑥大量のレコードに対して処理を行う
+❗遅延ロードを行うと、ロードのたびにクエリが発行される（N+1問題）が発生するため、他の方法がないか検討する
+
+🟢chunk()
+各チャンク（レコードを指定のレコード数で小分けにする）をクロージャで処理する。
+⇒大量のレコードに対して処理行うときに、メモリの使用量を最適化できる。
+
+例）usersテーブルに全部で300レコードが存在したとき、100レコードずつ、3回に分けて処理をしたい。
+DB::table('users')->orderBy('id')->chunk(100, function ($users) {
+    foreach ($users as $user) {
+        //
+    }
+});
+
+❗chunkでレコードを更新・削除はしない！
+主キー/外部キーの変更が影響して、レコードが期待したように処理されないことがある。
+
+🟢lazy()
+LazyCollectionにして返す。
+(レイジーコレクションの各要素がロードされるのは、その要素を処理するタイミング = 一度の全部のデータをロードしない)
+
+LazyCollection：performance_improvement/lazy_collection.txt
+
+❗lazyでレコードを更新・削除はしない！
+主キー/外部キーの変更が影響して、レコードが期待したように処理されないことがある。
+
+🟢lazyById・lazyByIdDesc
+idカラムの昇順・降順で並び替えたLazyCollectionを返す。
+
+❗レイジーコレクションでレコードを更新・削除したい場合は、こちらを使用した方が安全？
+
+
+
+🔵⑦レコードのロック
+
+🟢読み取り専用にする
+sharedLock()
+複数のトランザクションが同じデータを読み取り、その間にデータが変更されないことを確実にしたい場合に便利。
+
+具体例）
+複数ユーザーの閲覧：複数のユーザーが同時に在庫を確認する場合、他のユーザーが在庫を変更できないようにしたい。
+
+DB::table('users')
+    ->where('stock', '>', 100)
+    ->sharedLock()
+    ->get();
+
+🟢読み取りも更新も不可
+lockForUpdate
+選択したレコードを変更する他のトランザクションが実行されるとき、
+そのトランザクションがそのレコードを読み取ることも変更することもできないようにする。
+
+具体例）
+同時リクエスト：複数もしくは、同じユーザーが、１つのデータに対して同時に変更のリクエストを送信したとき、１つのリクエストのみを実行したい。
+
+DB::table('users')
+    ->where('stock', '>', 100)
+    ->lockForUpdate()
+    ->get();
+
+
+
+🔵⑧デバッグ
+クエリビルダのオブジェクトにdd()やdump()をチェーンして、デバッグできる。
+
+
+
+🔵where
+
+🟢複数のwhereをまとめる
+
+ー and条件
+whereの引数に配列を渡す / whereをチェーンする
+＊「=」は省略しない
+
+ー　or条件
+orWhere()
+
+ー 条件の内部に別の条件をつける
+クロージャーを定義
+
+例）select * from users where name = 'John' and (votes > 100 or title = 'Admin')
+$users = DB::table('users')
+    ->where('name', '=', 'John')
+    ->where(function ($query) {
+        $query->where('votes', '>', 100)
+            ->orWhere('title', '=', 'Admin');
+    })
+    ->get();
+
+例）select * from users where votes > 100 or (name = 'Abigail' and votes > 50)
+$users = DB::table('users')
+    ->where('votes', '>', 100)
+    ->orWhere(function($query) {
+        $query->where('name', 'Abigail')
+            ->where('votes', '>', 50);
+    })
+    ->get();
+
+❗グローバルスコープを適用したくない条件はクロージャー内で定義する
+⇒クロージャーはグローバルスコープよりも優先される
+
+ー　サブクエリの結果と比較して検索する
+クロージャーを定義
+
+例）サブクエリの結果 = Pro
+$users = User::where(function ($query) {
+    $query->select('type')
+        ->from('membership')
+        ->whereColumn('membership.user_id', 'users.id')
+        ->orderByDesc('membership.start_date')
+        ->limit(1);
+}, 'Pro')->get();
+
+例）amount < サブクエリの結果
+$incomes = Income::where('amount', '<', function ($query) {
+    $query->selectRaw('avg(i.amount)')->from('incomes as i');
+})->get();
+
+🟢サブクエリの結果が存在するデータを持つレコードを取得
+サブクエリの結果が存在するか
+⇒存在する場合は、そのメインクエリのレコードを結果に含める
+
+例）ordersテーブルのuser_idと、usersテーブルのidが一致するレコードが存在するとき、
+そのusersテーブルのレコードを結果に含めて返す。
+
+$users = DB::table('users')
+    ->whereExists(function ($query) {
+        $query->select(DB::raw(1))
+            ->from('orders')
+            ->whereColumn('orders.user_id', 'users.id');
+    })
+    ->get();
+
+🟢除外の条件
+whereNot、orWhereNot
+＊クロージャーも定義できる
+
+🟢指定した値の範囲で絞る
+whereBetween、orWhereBetween
+whereNotBetween、orWhereNotBetween
+
+🟢指定した別カラムの値の範囲で絞る
+whereBetweenColumns、whereNotBetweenColumns
+orWhereBetweenColumns、orWhereNotBetweenColumns
+
+例）minimum_allowed_weightカラムの値と、maximum_allowed_weightの値の範囲にweightカラムの値があるレコードを検索
+$patients = DB::table('patients')
+    ->whereBetweenColumns('weight', ['minimum_allowed_weight', 'maximum_allowed_weight'])
+    ->get();
+
+🟢配列 / クエリビルダに含まれる値を含むか・含まないか
+whereIn、whereNotIn
+orWhereIn、orWhereNotIn
+
+❗以下の方法よりは、pluck()を使った方が処理が早い（selectを使うと一度全レコードを取得するため）
+ー　クエリビルダのレコードに含まれる・含まれないか
+第２引数にクエリビルダを渡す。
+
+例）usersテーブルのnameカラムとcommentsテーブルのnameカラムの値を照合する。
+$activeUsers = DB::table('users')->select('name')->where('is_active', 1);　selectでcommentテーブルのuser_nameと照合したいカラムを指定する
+
+$users = DB::table('comments')
+    ->whereIn('user_name', $activeUsers)
+    ->get();
+
+ー　要素が整数の大きな配列と照合する
+メモリ使用量の削減するため、whereIntegerInRaw()、whereIntegerNotInRaw()を使用する
+＊整数以外には使用できない
+
+🟢NULLであるかどうか
+whereNull、whereNotNull、
+orWhereNull、orWhereNotNull
+
+🟢日付・時間で検索
+whereDate、whereMonth、whereDay、whereYear、whereTime
+❗インデックス適用しているテーブルには使用しない方が良い（インデックスが使用できなくなる）
+⇒whereBetweenなどで代用する
+
+🟢２つカラムの値が一致する
+whereColumn、orWhereColumn
+
+🟢フルテキストインデックスを適用したカラムの検索
+whereFullText、orWhereFullText
+
+＊フルテキストインデックス
+長文（テキストデータ）を保存するカラムに適用すると、いろいろな検索（部分一致・類似の単語を含む文の検索など）を高速に行える。
+
+ガイド「フルテキストのWHERE句」
+
+🟢JSONカラム型の検索
+＊JSONカラム型
+JSON形式のデータを保存できるカラム（JSONの構造をそのまま保存でき、「->」で指定したキーの値にアクセスもできる）
+
+ガイド「JSON WHERE句」

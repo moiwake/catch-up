@@ -17,6 +17,7 @@ https://readouble.com/laravel/9.x/ja/collections.html
 
 
 🔵注意
+https://qiita.com/yhosok/items/a95ae800970124fb503a
 
 ー　メモリ使用量の難制御
 レイジーコレクションが内部で何らかのデータを保持しており、そのデータが大きい場合には、逆にメモリに負荷がかかる可能性がある。

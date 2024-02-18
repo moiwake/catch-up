@@ -1,2 +1,0 @@
-Illuminate\Database\Query\Builderで定義されているメソッドは、Illuminate\Database\Eloquent\Builderのインスタンスでも使用できます。
-Illuminate\Database\Eloquent\Builderは、Illuminate\Database\Query\Builderを拡張しており、クエリビルダの機能を利用しつつ、Eloquentモデルとの統合を可能にします。
