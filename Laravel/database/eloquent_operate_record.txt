@@ -5,6 +5,7 @@ https://readouble.com/laravel/9.x/ja/eloquent.html
 🟡データベースレコードの操作
 
 
+
 🔵新しいレコードの登録
 
 🟢save()
@@ -17,6 +18,29 @@ https://readouble.com/laravel/9.x/ja/eloquent.html
 
 🟢検索してなければ新規作成・生成
 firstOrCreate・firstOrNew：別項参照
+
+
+
+🔵コピーの生成
+replicate()
+
+例）
+$shipping = Address::create([
+    'type' => 'shipping',
+    'line_1' => '123 Example Street',
+    ///
+]);
+
+$billing = $shipping->replicate()->fill([
+    'type' => 'billing'
+]);
+$billing->save();
+
+🟢指定のカラムのデータのみコピー
+replicateの引数に、コピーしたいカラム名の配列を渡す
+
+例）
+$billing = $shipping->replicate(['type' => 'billing']);
 
 
 
@@ -60,6 +84,11 @@ $data = [
     ['id' => 2,'departure' => 'Chicago', 'destination' => 'New York', 'price' => 150]
 ]
 Flight::upsert($data, ['id'], ['price']);
+
+🟢updated_atを変更せずに更新
+withoutTimestampsのクロージャ内で、更新の処理をする。
+
+Model::withoutTimestamps(fn () => $post->increment(['reads']));
 
 
 
@@ -237,14 +266,6 @@ withTrashed()
 ー　ソフトデリートレコードのみを取得する
 onlyTrashed()
 
-
-
-
-
-
-
-
-モデルのupdated_atタイムスタンプを変更せずに、モデル操作を行いたい場合は、withoutTimestampsメソッドへ指定するクロージャ内で、そのモデルを操作できます。
-
-Model::withoutTimestamps(fn () => $post->increment(['reads']));
-
+🟢データの定期削除
+Prunableトレイトの使用
+ガイド「モデルの整理」

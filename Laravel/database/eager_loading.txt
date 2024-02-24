@@ -1,0 +1,8 @@
+https://readouble.com/laravel/9.x/ja/eloquent-relationships.html
+「Eagerロード」
+
+
+
+🟡Eager Loading
+
+

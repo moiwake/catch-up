@@ -1,0 +1,99 @@
+https://readouble.com/laravel/9.x/ja/eloquent.html
+「イベント」
+
+
+
+🟡モデルのイベント
+
+🔵モデルのライフサイクル
+
+retrieved：レコードをDBから取得したとき
+creating・created：レコードを作成したとき
+updating・updated：レコードを更新したとき
+saving・saved：レコードを作成・更新したとき（属性の変更がなくてもディスパッチする）
+deleting・deleted
+trashed
+forceDeleting・forceDeleted
+restoring・restored
+replicating
+
+-ingで終わるイベント：変更が永続化される前にディスパッチされる。
+-edで終わるイベント：変更が永続化された後にディスパッチされる。
+
+❗Eloquentで一括更新・削除した場合、saved、updated、deleting、deletedイベントはディスパッチされない。
+
+
+
+🔵イベントをリッスンする
+
+①リッスンしたいライフサイクルのポイントのイベントクラスを作る。（UserSavedクラス、UserDeletedクラス）
+　⇒コンストラクターの引数で、対象モデルのインスタンスを受け取る。
+
+②$dispatchesEventsプロパティを定義する。
+　⇒ライフサイクルのポイントをイベントクラスにマッピングする。
+
+use App\Events\UserDeleted;
+use App\Events\UserSaved;
+
+class User extends Model
+{
+    protected $dispatchesEvents = [
+        'saved' => UserSaved::class,
+        'deleted' => UserDeleted::class,
+    ];
+}
+
+③イベントを処理するためにイベントリスナを定義する。
+
+＊ガイド：イベント
+https://readouble.com/laravel/9.x/ja/events.html
+
+🟢イベントクラスの代わりにクロージャーを定義する
+ガイド「クロージャの使用」
+
+🟢非同期でリスナーの処理を実行する
+通常のイベントと同様、キューを使って非同期を処理にすることができる。
+
+use function Illuminate\Events\queueable;
+
+// bootメソッド内
+static::created(queueable(function ($user) {
+    //
+}));
+
+*ガイド：イベント「Queueable匿名イベントリスナ」
+https://readouble.com/laravel/9.x/ja/events.html#queuable-anonymous-event-listeners
+
+
+
+🔵クライアントサイドにイベントを通知する
+
+ガイド：ブロードキャスト「モデルブロードキャスト」
+https://readouble.com/laravel/9.x/ja/broadcasting.html#model-broadcasting
+
+
+
+🔵ライフサイクルのイベントリスナをまとめる
+
+オブザーバーの定義
+⇒同じモデルのライフサイクルイベントのリスナーを１つにまとめることができる。
+⇒createdの処理、updatedの処理などを１つのクラスにまとめることができる。
+
+＊ガイド「オブザーバ」
+
+🟢トランザクション内でDB操作をしているとき
+コミットされた後にのみイベントハンドラを実行するように設定できる。
+
+public $afterCommit = true;
+
+
+
+🔵イベントをディスパッチさせない
+
+ー　withoutEvents()
+クロージャー内の処理では、イベントを発生させない。
+
+ー　Quietly
+saveQuietly()、updateQuietly()・・・などを使用する。
+
+＊ガイド「イベントのミュート」
