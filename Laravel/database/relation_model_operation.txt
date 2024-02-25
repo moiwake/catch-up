@@ -1,0 +1,254 @@
+https://readouble.com/laravel/9.x/ja/eloquent-relationships.html
+「関連モデルの挿入と更新」
+
+
+
+🟡関連モデルのレコードを新規作成・更新する
+
+🔵saveとcreateの使い分け
+
+ー　２つの違い
+
+①挙動
+save：作成と更新のどちらもできる。（モデルの状態をチェックして、DBに作成なのか更新なのかを判断する）
+create：作成のみ
+
+②引数
+save：リレーションモデルのインスタンスを引数に渡す。
+create：属性とその値を持った配列を渡す。
+
+③返り値
+save：[保存成功]作成したモデル　[保存失敗]false
+create：[保存成功]作成したモデル　[保存失敗]例外がスローされる
+
+🟢コントローラーのstore/update
+saveメソッドを使用する場合が多い。
+
+[理由]
+FormRequestや、validateメソッドでリクエストのチェックをしてからsaveメソッドを実行する。
+また、エラーもリクエストをチェックしたときに発生させる。
+
+🟢コントローラー以外でレコードの作成・更新をするとき
+必要に応じて使い分ける。
+
+[ポイント]
+２つの違いを考慮して、状況を見て使い分ける。
+createは保存失敗のときに例外がスローされるため、try・catch文の中で使用と良い？？
+
+
+
+🔵モデルの保存（作成・更新）
+save
+関連モデルの保存を行うときは、引数に関連モデルのインスタンスを渡す。
+❗関連モデルの参照はリレーションメソッドを使う（✘プロパティ）
+
+例）
+$comment = new Comment(['message' => 'A new comment.']);
+$post = Post::find(1);
+$post->comments()->save($comment);  // ❗commentsではなく、comments()
+
+🟢複数モデルの保存（作成・更新）
+saveMany
+
+例）
+$post = Post::find(1);
+
+$post->comments()->saveMany([
+    new Comment(['message' => 'A new comment.']),
+    new Comment(['message' => 'Another new comment.']),
+]);
+
+🟢ネストしたリレーションを保存
+push
+親モデルと、それに関連する「すべて」のリレーションを保存できる。
+
+❗挙動がわかりづらいから、あんまり良くないような気もする・・・？？？
+
+例）Post：親
+　　Comment：Postの子（1対多）、Authorの子（1対多）
+　　Author：Commentの親（Postとは直接関連はしていない）
+
+$post = Post::find(1);
+
+$post->comments[0]->message = 'Message';  // Commentのmessageカラムに値を代入
+$post->comments[0]->author->name = 'Author Name';  // Authorのnameカラムに値を代入
+$post->push();
+
+ー　イベントをミュートする
+pushQuietly
+pushの処理をイベントミュートで実行できる。
+
+例）$post->pushQuietly();
+
+
+
+🔵モデルの作成（複数代入）
+create
+
+例）
+$post = Post::find(1);
+
+$comment = $post->comments()->create([
+    'message' => 'A new comment.',
+]);
+
+🟢複数モデルの作成
+createMany
+
+例）
+$post = Post::find(1);
+
+$post->comments()->createMany([
+    ['message' => 'A new comment.'],
+    ['message' => 'Another new comment.'],
+]);
+
+
+
+🔵findOrNew、firstOrNew、firstOrCreate、updateOrCreate
+＊eloquent_model_operation.txtを参照
+
+
+
+🔵中間テーブルのモデル
+
+🟢作成
+attach
+引数：関連モデルのidを渡す（配列にして複数渡すこともできる）
+
+例）
+$user = User::find(1);
+$user->roles()->attach($roleId);
+
+ー　外部キー以外の属性値も設定
+第２引数に配列を渡す。
+
+例）$user->roles()->attach($roleId, ['expires' => $expires]);
+
+ー　複数の中間テーブルモデルを属性を設定して作成
+配列のキー：id
+配列の値：属性の配列
+
+例）
+$user->roles()->attach([
+    1 => ['expires' => 'patternA'],
+    2 => ['expires' => 'patternB'],
+]);
+
+🟢削除
+detach
+
+ー　指定のモデルを削除
+$user->roles()->detach($roleId);
+
+ー　全モデルを削除
+$user->roles()->detach();
+
+🟢中間テーブルの上書き
+sync
+引数で指定したidを「対象モデルの外部キー」として持つ中間テーブルのモデルのみが存在するように上書きする。
+⇒既存のモデルは削除し、再作成する。
+
+https://beyondjapan.com/blog/2022/01/laravel-sync/#sync-2
+
+例）role_userテーブルにrole_idが1,2,3のデータのみ存在するように、既存のモデルを削除し、再作成する。
+現在の中間テーブル
+| user_id | role_id |
+|---------|---------|
+| 1       | 2       |
+| 1       | 4       |  // 削除される
+
+$user->roles()->sync([1, 2, 3]);　
+
+sync実行後の中間テーブル
+| user_id | role_id |
+|---------|---------|
+| 1       | 1       |　// 作成
+| 1       | 2       |　// 一度削除されてから、再作成される
+| 1       | 3       |　// 作成
+
+ー　属性の設定
+$user->roles()->sync([1 => ['expires' => true], 2, 3]);
+
+ー　同じ属性を全モデルに設定
+$user->roles()->syncWithPivotValues([1, 2, 3], ['active' => true]);
+
+ー　idで指定した以外のレコードを残したい
+syncWithoutDetaching
+
+例）$user->roles()->syncWithoutDetaching([1, 2, 3]);  // role_userテーブルにrole_idが4,5のレコードがあったとしても削除されない
+
+🟢関連があれば解除、なければ追加
+toggle
+引数で指定したidを「対象モデルの外部キー」として持つ中間テーブルのモデルが、
+指定のidとの関連が存在していれば（外部キーを持つレコードがあれば）、関連を解除する（そのレコードを削除する）。
+指定のidとの関連がなければ（外部キーを持つレコードがなければ）、関連を追加する（関連のレコードを追加する）。
+
+例）role_userテーブルにrole_idが1,2,3があれば削除、なければ作成
+
+現在の中間テーブル
+| user_id | role_id |
+|---------|---------|
+| 1       | 2       |  // 削除される
+| 1       | 4       |  // どうなる？？？
+
+$user->roles()->toggle([1, 2, 3]);　
+
+sync実行後の中間テーブル
+| user_id | role_id |
+|---------|---------|
+| 1       | 1       |　// 作成
+| 1       | 3       |　// 作成
+
+ー　属性の設定
+$user->roles()->toggle([
+    1 => ['expires' => true],
+    2 => ['expires' => true],
+]);
+
+🟢更新
+
+ー　属性の更新
+updateExistingPivot
+
+例）
+$user = User::find(1);
+
+$user->roles()->updateExistingPivot($roleId, [
+    'active' => false,
+]);
+
+ー　外部キーの更新
+associate
+外部キーを設定しなおせる。（親モデルのレコードを更新できる。）
+
+❗saveだけでできないの・・・？？？
+❗１対〇〇の関係（BelongsTo）でのみ使用可能
+
+例）
+$account = Account::find(10);
+$user->account()->associate($account);
+$user->save();
+
+ー　外部キーをNULLにする（親モデルとの関連を削除する）
+dissociate
+
+例）
+$user->account()->dissociate();
+$user->save();
+
+
+
+🔵モデルのインスタンスをDBのデータと同期させる（最新にする）
+refresh、fresh
+
+＊eloquent_model_operation.txtの同項目を参照
+
+
+
+🔵子モデルを更新したときに親モデルのupdate_atを更新する
+子モデルにtouchesプロパティを設定する。
+
+protected $touches = ['post'];
+
+❗親モデルのタイムスタンプは、Eloquentのsaveメソッドを使用して子モデルを更新した場合にのみ更新される。

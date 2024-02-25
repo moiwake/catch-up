@@ -3,6 +3,163 @@ https://readouble.com/laravel/9.x/ja/eloquent-relationships.html
 
 
 
-🟡Eager Loading
+🟡Eagerロード
 
 
+
+🟡対象モデルの取得と同時に
+with
+リレーションモデルを事前読み込みして、クエリの発行数を減らすことができる。
+
+ー　複数のEagerロード
+$books = Book::with(['author', 'publisher'])->get();
+
+ー　ネストしたリレーションのEagerロード
+$books = Book::with('author.contacts')->get();
+
+＊複数のネスト
+$books = Book::with([
+    'author' => [
+        'contacts',
+        'publisher',
+    ],
+])->get();
+
+
+
+🔵特定のカラムのみ読み込む
+リレーション名に続けて「, カラム名」を付ける。
+
+$books = Book::with('author:id,name,book_id')->get();
+
+❗idカラムと、外部キーのカラムは必ず含めるようにする。
+
+
+
+🔵ポリモーフィックのネストしたリレーション
+withメソッドのクロージャー内で、morphWithを使用する。
+
+$activities = ActivityFeed::query()
+    ->with(['parentable' => function (MorphTo $morphTo) {  // parentable：ポリモーフィック関連のリレーション名
+        $morphTo->morphWith([
+            Event::class => ['calendar'],  // Event::class：ActivityFeedとポリモーフィック関連を持つモデル
+            Photo::class => ['tags'],      // calendar：Event::classと関連を持つモデルのリレーション名
+            Post::class => ['author'],
+        ]);
+    }])->get();
+
+
+
+🔵必ずEagerロードするモデルを設定する
+モデルにwithプロパティを指定する。
+
+protected $with = ['author'];
+
+
+
+🔵Eagerロードしたモデルを削除する
+without
+
+$books = Book::without('author')->get();
+
+
+
+🔵Eagerロードするモデルを上書きする
+withOnly
+⇒一度Eagerロードしたモデルがあっても、引数で指定したモデルのみ読み込ませる。
+
+$books = Book::withOnly('genre')->get();
+
+
+
+🔵制約を追加する
+withの引数に配列を渡す
+キー：リレーション名
+値：制約のクエリを指定したクロージャー
+
+$users = User::with(['posts' => function ($query) {
+    $query->where('title', 'like', '%code%');
+}])->get();
+
+❗制約のクエリには、limitおよびtakeクエリビルダメソッドは使用できない。
+
+ー　ポリモーフィックのとき
+constrainをwithのクロージャー内で使用する。
+constrainの引数に配列を渡す。
+　キー：リレーション名
+　値：制約のクエリを指定したクロージャー
+
+$comments = Comment::with(['commentable' => function (MorphTo $morphTo) {  // commentable：ポリモーフィック関連のリレーション名
+    $morphTo->constrain([
+        Post::class => function (Builder $query) {  // Post::class：Commentとポリモーフィック関連を持つモデル
+            $query->whereNull('hidden_at');
+        },
+        Video::class => function (Builder $query) {
+            $query->where('type', 'educational');
+        },
+    ]);
+}])->get();
+
+
+
+🔵指定条件に該当するリレーションのレコードが存在すれば、Eagerロードする
+withWhereHas
+　第１引数：リレーション名
+　第２引数：条件のクロージャー　⇒　この条件に該当するリレーションのレコードが存在すれば、そのレコードをEagerロードする。
+　返り値：Userモデル
+
+$users = User::withWhereHas('posts', function ($query) {
+    $query->where('featured', true);
+})->get();
+
+
+
+
+
+🟡対象モデルの取得の後に
+load
+親モデルを取得した後に、リレーションをEagerロードする。
+
+$books = Book::all();
+
+if ($someCondition) {
+    $books->load('author', 'publisher');
+}
+
+
+
+🔵制約を追加する
+引数に配列を渡す。
+
+$author->load(['books' => function ($query) {
+    $query->orderBy('published_date', 'asc');
+}]);
+
+
+
+🔵未ロードの場合にリレーションを読み込む
+loadMissing
+
+$book->loadMissing('author');
+
+
+
+🔵ポリモーフィックのネストしたリレーションのみを遅延ロードする
+loadMorph
+⇒Eagerロードしたポリモーフィックのモデルと関連しているモデルを遅延ロードする。
+
+例）EventとPhotoはEagerロードされ、それらと関連してるCalendarとTagモデルは遅延ロードされる。
+
+$activities = ActivityFeed::with('parentable')
+    ->get()
+    ->loadMorph('parentable', [
+        Event::class => ['calendar'],
+        Photo::class => ['tags'],
+        Post::class => ['author'],
+    ]);
+
+
+
+🔵遅延ロードを禁止する（例外を発生させる）
+preventLazyLoading
+ガイド「遅延ロードの防止」
