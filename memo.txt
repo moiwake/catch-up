@@ -200,3 +200,19 @@ return [
 //SubscriptionStatusResource
 
 $this->subscription = new PremiumPlan->as($this->resource->active_user_plan->user_id);
+
+
+
+
+⑤個々のリソースを作る
+
+$collection = collect();
+$mst_user_plans->each(function ($plan) {
+    $subscription = new PremiumPlan($plan->plan_type)->as($user);
+    $active_user_plan = $subscription->user_plan;
+    $collection->add???(new SubscriptionStatusResource($active_user_plan, $subscription));
+});
+
+$collection->sortByDesc('active_user_plan.start_date');
+
+return response($collection);
