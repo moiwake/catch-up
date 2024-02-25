@@ -178,7 +178,7 @@ $mst_user_plans = $this->subscription->mst_user_plans; // 有効なmst_user_plan
 $mst_user_plan_ids = $mst_user_plans->pluck('id');
 
 $mst_user_plans->each(function ($mst_user_plan) {
-    $mst_user_plan->active_user_plan = $this->subscription->user_plan($mst_user_plan->plan_type);
+    $mst_user_plan->active_user_plan = $this->subscription->user_plan($mst_user_plan->plan_type); ❗これできない気がする！！
 });
 ⇒　目的のデータを含んだmst_user_planのデータを取得できる && user_planのデータ内にログインユーザーのidも含まれている。
 
