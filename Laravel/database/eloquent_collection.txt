@@ -1,0 +1,158 @@
+https://readouble.com/laravel/9.x/ja/eloquent-collections.html
+
+
+
+🟡Eloquentコレクション
+
+Eloquentコレクションは基本のコレクションオブジェクトを拡張している。
+
+🔵返り値
+Eloquentコレクションメソッド
+⇒基本的にEloquentコレクションの新しいインスタンスを返す
+
+ー　基本のコレクションインスタンスを返す
+・collapse、flatten、flip、keys、pluck、zip
+・map操作の結果にEloquentモデルが含れていないとき、返り値は基本コレクションインスタンスに変換される。
+
+
+
+
+🟡Eloquentコレクション独自のメソッド
+
+🔵指定のモデルがコレクションに含まれているか
+contains
+引数はプライマリーキーか、モデルのインスタンス
+
+例）
+$users->contains(1);
+$users->contains(User::find(1));
+
+
+
+🔵コレクションから、指定のコレクションに存在しないモデルを取得する
+diff
+引数のコレクションとの差分を取得する。
+
+例）
+$users = $users->diff(User::whereIn('id', [1, 2, 3])->get());
+
+
+
+🔵指定のプライマリーキーのモデルを取得する
+引数に指定したプライマリーキーのモデルのみ含んだコレクションを返す。
+※クエリビルダーならwhereIn
+
+例）$users = $users->only([1, 2, 3]);
+
+
+
+🔵指定のプライマリーキーのモデルを除く
+except
+引数に指定したプライマリーキーのモデルを除いたコレクションを返す。
+※クエリビルダーならwhereNotIn
+
+例）$users = $users->except([1, 2, 3]);
+
+
+
+🔵find
+コレクションにも使える
+
+
+
+🔵コレクションのモデルをDBから再取得（DBとの同期）
+fresh
+例）$users = $users->fresh();
+
+ー　リレーションをEagerロードして再取得
+引数にリレーション名を指定する
+
+例）$users = $users->fresh('comments');
+
+
+
+🔵指定のコレクションと共通するモデルを取得する
+intersect
+例）$users = $users->intersect(User::whereIn('id', [1, 2, 3])->get());
+
+
+
+🔵重複を除く
+unique
+コレクション内の、同じタイプ・同じ主キーを持つモデルをすべて削除する。
+
+
+
+🔵Builderオブジェクトに変換する
+toQuery
+Eloquentコレクションをクエリビルダーオブジェクトに変換する
+
+例）
+$users = User::where('status', 'VIP')->get();
+
+$users->toQuery()->update([
+    'status' => 'Administrator',
+]);
+
+
+
+🔵プライマリーキーをコレクションに取り出す
+modelKeys
+※pluck('id')でも同じ
+
+
+
+🔵属性のhidden・visibleを切り替える
+
+ー　hiddenをvisibleに
+makeVisible
+コレクション内の各モデルでhiddenになっている属性をvisibleにする。
+
+ー　visibleをhiddenに
+makeHidden
+コレクション内の各モデルでvisibleになっている属性をhiddenにする。
+
+
+
+🔵visible・hidden属性の設定を一時上書き
+
+ー　visible属性のセット
+setVisible
+引数に指定した属性のみをvisibleにするように上書き設定する。
+
+例）$users = $users->setVisible(['id', 'name']);
+
+ー　hidden属性のセット
+setHidden
+引数に指定した属性のみをhiddenにするように上書き設定する。
+
+例）$users = $users->setHidden(['email', 'password', 'remember_token']);
+
+
+
+🔵モデルにテーブルに存在しないプロパティを追加する
+append
+
+❗プロパティの値の設定はモデルでする
+ガイド「シリアライズ」：JSONへ値の追加　https://readouble.com/laravel/9.x/ja/eloquent-serialization.html#appending-values-to-json
+参考：https://qiita.com/YutaManaka/items/9c6431bd92c42d28922e
+
+※モデルで定義するため、テーブルのカラムには追加したくはないが、
+ 頻繁に使用するプロパティはあるときに使う？？？
+
+
+
+
+
+🟡独自のコレクションクラスを返すようにする
+特定のモデルをEloquentコレクションとして取得するとき、
+独自に定義したクラスのインスタンスを返すように設定できる。
+⇒モデルでnewCollectionメソッドを定義する
+
+例）UserモデルのEloquentコレクションを取得するときには、UserCollectionクラスのインスタンスが返される。
+public function newCollection(array $models = [])
+{
+    return new UserCollection($models);
+}
+
+※ UserCollectionクラスの定義が必要

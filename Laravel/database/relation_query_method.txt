@@ -285,6 +285,25 @@ foreach ($posts as $post) {
     echo $post->total_comments;
 }
 
+ー　withExists
+引数に指定したモデルとリレーションがあるかどうかの判定を示すtrue/falseの値をもったプロパティをクエリのモデルに追加する。
+
+例）クエリの例
+[
+    {
+        "id": 1,
+        "name": "User 1",
+        "email": "user1@example.com",
+        "posts_exists": true
+    },
+    {
+        "id": 2,
+        "name": "User 2",
+        "email": "user2@example.com",
+        "posts_exists": false
+    }
+]
+
 🟢取得対象モデルの取得の後に
 loadMin、loadMax、loadAvg、loadSum、loadExists
 ⇒対象のレコードに「リレーション名_count」プロパティを追加する。
@@ -294,3 +313,6 @@ $post = Post::first();
 $post->loadSum('comments', 'votes');
 
 ＊応用的な使用方法はwithSumなどと同じ？？
+
+
+

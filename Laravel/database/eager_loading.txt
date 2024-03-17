@@ -2,10 +2,16 @@ https://readouble.com/laravel/9.x/ja/eloquent-relationships.html
 「Eagerロード」
 
 
+❗リレーションモデルのロードのタイミング
+①遅延ロード（lazy loading）
+・リレーションメソッドを使用したとき
+
+②事前ロード（eager loading）
+・withなど、、、以下参照
+
+
 
 🟡Eagerロード
-
-
 
 🟡対象モデルの取得と同時に
 with
