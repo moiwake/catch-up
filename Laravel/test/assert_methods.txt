@@ -1,0 +1,306 @@
+https://readouble.com/laravel/9.x/ja/http-tests.html
+「利用可能なアサート」
+
+一覧
+https://laravel.com/api/8.x/Illuminate/Testing/TestResponse.html
+
+
+※JSONレスポンスは配列に変換される
+
+
+🟡JSONレスポンスの一致
+
+🔵部分一致（指定の配列が存在するか）
+
+🟢構造もチェックする
+assertJson
+指定の配列がレスポンス内に存在するかどうか
+
+・レスポンスに他のプロパティが存在してもパスする。
+・配列の階層が一致していなければパスしない。（たぶん）
+
+🟢構造はチェックしない
+assertJsonFragment
+指定の配列がレスポンス内に存在するかどうか
+
+・レスポンスに他のプロパティが存在してもパスする。
+・配列の階層が一致していなくてもパスする。
+
+
+
+🔵完全一致（指定の配列と同じか）
+assertExactJson
+指定の配列とレスポンスが一致するか
+
+・レスポンスの構造とその値が完全に一致していないとパスしない。
+
+
+
+🔵１箇所のみ
+assertJsonPath
+レスポンスのパスの値と、指定の値が一致するか
+
+第１引数：レスポンスのパス（ドットで階層を指定）
+第２引数：期待値
+
+例）
+レスポンスの構造
+{
+    "user": {
+        "id": 1,
+        "name": "John Doe",
+        "profile": {
+            "email": "john@example.com",
+            "age": 30
+        }
+    }
+}
+
+$response->assertJsonPath('user.profile.email', 'john@example.com');
+
+🟢クロージャーで合格の条件をカスタムする
+第２引数にクロージャーを渡すことができる：true/falseを返すクロージャー
+⇒trueの場合にはパスするようなテストが書ける
+
+例）レスポンスの指定のパスの値が、３文字以上かを検証する
+$response->assertJsonPath('team.owner.name', fn ($name) => strlen($name) >= 3);
+⇒$nameには'team.owner.name'の値が入る
+⇒$nameが３文字以上ならばtrueを返し、パスする。
+
+
+
+
+🟡その他レスポンスに関する検証
+
+🔵指定キーの要素数
+assertJsonCount
+※キーの指定がないときは、最上位のレベルの要素数を検証する
+
+例）$response->assertJsonCount(3, 'users');
+
+
+
+🔵キーの有無と、構造
+assertJsonStructure
+
+例）
+$response->assertJsonStructure([
+    'user' => [
+        '*' => [
+            'name',
+            'age',
+            'location'
+        ]
+    ]
+]);
+
+レスポンス
+{
+    "user": [
+        {
+            "name": "Steve Schoger",
+            "age": 55,
+            "location": "Earth"
+        },
+        {
+            "name": "Mary Schoger",
+            "age": 60,
+            "location": "Earth"
+        }
+    ]
+}
+
+
+
+🔵ステータスコード
+assertStatus(ステータスコード)
+assertSuccessful：200 ~ 299
+assertOk：200
+assertCreated：201
+assertUnauthorized：401
+assertForbidden：403
+assertNotFound：404
+assertUnprocessable：422
+
+
+
+🔵バリデーション
+
+ー　バリデーションエラーがある/ない＆セッションストレージにエラーが一時保存されている/いない
+assertInvalid
+assertValid
+
+例）
+$response->assertValid();
+$response->assertValid(['name', 'email']);
+
+$response->assertInvalid([
+    'name' => 'The name field is required.',
+    'email' => 'valid email address',
+]);
+
+ー　指定するキーのバリデーションエラーがある/ない
+assertJsonValidationErrors
+assertJsonMissingValidationErrors
+
+
+
+🔵リダイレクト先のURI
+
+ー　指定したURIへのリダイレクトが成功したか
+$response->assertRedirect($uri);
+
+※Locationヘッダに指定するURI値があるか（assertRedirectの方がいいと思う）
+assertLocation
+
+ー　指定した名前付きルートへリダイレクトしたか
+$response->assertRedirectToRoute($name = null, $parameters = []);
+
+ー　指定署名付きルートへリダイレクト
+$response->assertRedirectToSignedRoute($name = null, $parameters = []);
+
+ー　指定した文字列を含むURIへリダイレクト
+$response->assertRedirectContains($string);
+
+
+
+🔵レスポンスに含まれていない
+
+ー　部分一致
+assertJsonMissing
+
+ー　完全一致
+assertJsonMissingExact
+
+ー　１箇所のみ
+assertJsonMissingPath
+
+
+
+🔵データ型
+
+ー　配列か
+$response->assertJsonIsArray();
+
+ー　オブジェクトか
+$response->assertJsonIsObject();
+
+
+
+🔵ヘッダー
+assertHeader、assertHeaderMissing
+
+
+
+🔵文字列　　これ何？
+※２番目の引数にfalseを渡さない限り、指定する文字列を自動的にエスケープする。
+
+ー　指定する文字列/テキストがレスポンスに含まれているか
+$response->assertSee($value, $escaped = true);
+$response->assertSeeText($value, $escaped = true);
+
+※含まれていない
+assertDontSee、assertDontSeeText
+
+ー　複数の文字列が順番に含まれる
+$response->assertSeeInOrder(array $values, $escaped = true);
+$response->assertSeeTextInOrder(array $values, $escaped = true);
+
+ー　指定した文字列がレスポンスの内容と一致するか
+$response->assertContent($value);
+
+ー　レスポンスに指定するHTTPステータスコードがある＆コンテンツがない
+$response->assertNoContent($status = 204);
+
+ー　指定文字列がストリームしたレスポンスの内容に一致するか
+$response->assertStreamedContent($value);
+
+
+
+
+
+🟡認証の検証
+
+ー　ユーザーが認証済みか/してないか
+$this->assertAuthenticated($guard = null);
+$this->assertGuest($guard = null);
+
+ー　特定のユーザーが認証済み
+$this->assertAuthenticatedAs($user, $guard = null);
+
+
+
+
+
+🟡クッキーの検証
+assertCookie
+assertCookieExpired
+assertCookieNotExpired
+assertCookieMissing
+
+ー　レスポンスに指定する暗号化されていないクッキーが含まれているか
+$response->assertPlainCookie($cookieName, $value = null);
+
+
+
+
+
+🟡セッションの検証
+
+ー　セッションに指定するデータが含まれているか
+$response->assertSessionHas($key, $value = null);
+
+クロージャを第２引数に渡せる（クロージャがtrueを返せばアサートは成功）
+
+$response->assertSessionHas($key, function ($value) {
+    return $value->name === 'Taylor Otwell';
+});
+
+ー　セッションの一時保存されている入力配列に指定する値があるか
+$response->assertSessionHasInput($key, $value = null);
+
+クロージャを第２引数に渡せる（クロージャがtrueを返せばアサートは成功）
+
+$response->assertSessionHasInput($key, function ($value) {
+    return Crypt::decryptString($value) === 'secret';
+});
+
+ー　セッションにキー／値ペアの指定配列が含まれているか
+$response->assertSessionHasAll(array $data);
+
+例）$response->assertSessionHasAll([
+    'name' => 'Taylor Otwell',
+    'status' => 'active',
+]);
+
+ー　指定する$keysのエラーがセッションに含まれているか
+$keysが連想配列の場合、セッションに各フィールド(キー)の特定のエラーメッセージ(値)が含まれているか
+※バリデーションエラーをJSON構造として返すのではなく、セッションに一時保存するルートをテストするときに使用する
+
+$response->assertSessionHasErrors(
+    array $keys, $format = null, $errorBag = 'default'
+);
+
+例）nameフィールドとemailフィールドにセッションへ一時保存された検証エラーメッセージがあることを検証する
+$response->assertSessionHasErrors(['name', 'email']);
+
+$response->assertSessionHasErrors([
+    'name' => 'The given name was invalid.'
+]);
+
+❗assertInvalidは、レスポンスがJSONとして返されたバリデーションエラーを持つか、またはエラーがセッションストレージに一時保存されたことを検証できる
+
+ー　指定エラーバッグ内に指定する$keysのエラーがセッションに含まれているか
+$keysが連想配列の場合、セッションにはエラーバッグ内の各フィールド(キー)に特定のエラーメッセージ(値)が含まれていることを検証
+
+$response->assertSessionHasErrorsIn($errorBag, $keys = [], $format = null);
+
+ー　セッションにバリデーションエラーがない
+$response->assertSessionHasNoErrors();
+
+ー　指定するキーのバリデーションエラーがセッションにない
+$response->assertSessionDoesntHaveErrors($keys = [], $format = null, $errorBag = 'default');
+❗assertValidは、レスポンスにJSON形式で返された結果にバリデーションエラーがなく、かつセッションストレージにエラーが保存されていないことを検証する
+
+ー　セッションに指定するキーが含まれていない
+$response->assertSessionMissing($key);

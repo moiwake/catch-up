@@ -1,0 +1,131 @@
+
+
+
+
+
+
+🟡検索メソッドを使ったアサーション
+
+assertJsonの引数にクロージャを渡す
+⇒Illuminate\Testing\Fluent\AssertableJsonのインスタンスとしてレスポンスが呼び出される。
+
+例）
+$response
+    ->assertJson(fn (AssertableJson $json) =>
+        $json->where('id', 1)  //JSONレスポンスにidキーが存在し、その値が1であることを検証
+            ->where('email', fn ($email) => str($email)->is('victoria@gmail.com'))  //emailキーの値がvictoria@gmail.comであることを検証（クロージャーも使用できる）
+            ->whereNot('status', 'pending')  //statusキーの値がpendingでないことを検証
+            ->missing('password')  //passwordキーがJSONレスポンスに含まれていないことを検証
+            ->etc()  //JSONレスポンスが他にもキーを持つ可能性があることを示し、これらのキーについては特定の検証を行わないことを意味する
+    );
+
+🔵AssertableJsonのインスタンスに使用できるメソッド
+https://laravel.com/api/8.x/Illuminate/Testing/Fluent/AssertableJson.html
+
+🟢値の検証
+where、whereNot、whereIn(?)、whereAll（配列を渡す）
+
+🟢型の検証
+whereType、whereAllType
+※string、integer、double、boolean、array、nullタイプを検証できる
+
+例）
+$response->assertJson(fn (AssertableJson $json) =>
+    $json->whereType('id', 'integer')
+         ->whereAllType([
+            'users.0.name' => 'string',
+            'meta' => 'array'
+        ])
+);
+
+ー　複数タイプを指定する
+「|」で区切る
+
+$response->assertJson(fn (AssertableJson $json) =>
+    $json->whereType('name', 'string|null')
+         ->whereType('id', ['string', 'integer'])
+);
+
+🟢プロパティの存在有無の検証
+has、missing、hasAll、missingAll、hasAny（任意の数の引数を渡し、その中に１つでも存在するかを検証）
+
+🟢複数のオブジェクトを含むレスポンスの検証
+https://laravel.com/api/8.x/Illuminate/Testing/Fluent/Concerns/Has.html
+
+eachを使えばそれぞれの検証できる？？
+
+ー　オブジェクトの数
+has
+
+ー　全オブジェクトの検証
+each
+
+例）
+$response->assertJson(fn (AssertableJson $json) =>
+    $json->has('meta')
+        ->has('users', 3)
+        ->each('users.*', fn ($json) =>
+            $json->where('id')->isInt()
+                ->where('name')->isString()
+                ->missing('password')
+                ->etc()
+        )
+);
+
+ー　特定位置のオブジェクトの検証
+first、nth、last
+もしくは、has('users.0', クロージャー)
+
+例）
+$response
+    ->assertJson(fn (AssertableJson $json) =>
+        $json->has(3)
+            ->first(fn ($json) =>
+                $json->where('id', 1)
+                    ->where('name', 'Victoria Faith')
+                    ->missing('password')
+                    ->etc()
+            )
+    );
+
+※こっちの方がわかりやすいと思う
+$response
+    ->assertJson(fn (AssertableJson $json) =>
+        $json->has('meta')
+             ->has('users', 3)
+             ->has('users.0', fn ($json) =>
+                $json->where('id', 1)
+                     ->where('name', 'Victoria Faith')
+                     ->missing('password')
+                     ->etc()
+             )
+    );
+
+🟢etc
+他のプロパティがレスポンスに含まれることを許容する。
+
+
+
+
+
+🟡ファイルアップロードのテスト
+ガイド「ファイルアップロードのテスト」
+
+🔵レスポンスがダウンロードであることの検証
+$response->assertDownload();
+
+[以下の検証を行う]
+・成功のステータスコード（通常は200 OK）
+・レスポンスにContent-Typeヘッダーが存在し、これがファイルのMIMEタイプと一致していること。
+・Content-Dispositionヘッダーがattachment; filename="ファイル名"の形式で設定されていること、
+　⇒これによりブラウザがファイルをダウンロードするように指示される。
+
+ー　ダウンロード可能なファイルに指定のファイル名が付与されているか
+$response->assertDownload('image.jpg');
+
+
+
+
+
+🟡ビューのテスト
+ガイド「ビューのテスト」、「利用可能なアサート」：assertView〇〇
