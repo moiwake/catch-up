@@ -8,7 +8,7 @@ https://ja.vuejs.org/guide/essentials/application
 import { createApp } from 'vue';
 import App from './App.vue';
 
-// App.vueはVueコンポーネントの例です。実際のコンポーネントはプロジェクトにより異なります。
+// App.vueはVueコンポーネントの例
 
 const app = createApp(App);
 
@@ -94,3 +94,4 @@ app.component('my-component', {
 
 // アプリケーションのマウント
 app.mount('#app');
+
